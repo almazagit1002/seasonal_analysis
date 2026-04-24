@@ -1,0 +1,6 @@
+data:
+  bucket: "crypto-historical-price-faadab22"
+  bronze_key: "bronze/btc.parquet"
+
+analysis:
+  expected_interval_days: 1

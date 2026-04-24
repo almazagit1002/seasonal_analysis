@@ -1,0 +1,8 @@
+pandas
+pyarrow
+boto3
+PyYAML
+numpy
+requests
+statsmodels
+matplotlib
