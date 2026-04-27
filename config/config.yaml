@@ -4,3 +4,22 @@ data:
 
 analysis:
   expected_interval_days: 1
+
+decomposition:
+  period: 365
+  model: multiplicative
+
+signals:
+  bull_threshold: 2
+  bear_threshold: -2
+
+bitcoin_cycle:
+  bull_days: 450
+  bear_days: 800
+
+  halvings:
+    - "2012-11-28"
+    - "2016-07-09"
+    - "2020-05-11"
+    - "2024-04-20"
+    - "2028-03-01"
