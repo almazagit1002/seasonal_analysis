@@ -2,16 +2,11 @@ data:
   bucket: "crypto-historical-price-faadab22"
   bronze_key: "bronze/btc.parquet"
 
-analysis:
-  expected_interval_days: 1
+output:
+  bucket: "btc-seasonal-analysis-faadab22"
+  silver_key: "btc_enriched.parquet"
+  gold_key: "btc_seasonal_profile.parquet"
 
-decomposition:
-  period: 365
-  model: multiplicative
-
-signals:
-  bull_threshold: 2
-  bear_threshold: -2
 
 bitcoin_cycle:
   bull_days: 450

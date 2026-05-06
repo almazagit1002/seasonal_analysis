@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name="seasonal-analysis-pipeline",
     version="0.1.0",
-    description="End-to-end data engineering pipeline for seasonla analyisis of foinancila assets",
+    description="End-to-end data engineering pipeline for seasonal analysis of financial assets",
     author="Alejandro Maza V.",
     packages=find_packages(where="src",exclude=("tests", "notebooks")),
     package_dir={"": "src"},              # map root to src/

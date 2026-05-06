@@ -4,5 +4,3 @@ boto3
 PyYAML
 numpy
 requests
-statsmodels
-matplotlib

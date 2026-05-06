@@ -1,8 +1,10 @@
 from utils.logger import get_logger
+from utils.config_reader import ConfigReader
+from utils.s3_utils import upload_df_to_s3
+from utils.validators import validate_enriched, validate_profile
 from data.data_loader import DataLoader
-from analysis.decomposition import Decomposer
-from analysis.seasonality import SeasonalityAnalyzer
-from analysis.bitcoin_cycle import BitcoinCycleAnalyzer
+from analysis.enricher import DataEnricher
+from analysis.aggregator import SeasonalAggregator
 
 logger = get_logger(__name__, log_to_file=True)
 
@@ -11,69 +13,49 @@ def main():
     try:
         logger.info("PIPELINE STARTED")
 
-        # =========================================================
-        # 1. DATA LOADING
-        # =========================================================
-        logger.info("Step 1: Loading and preparing data")
-        loader = DataLoader()
+        output_cfg = ConfigReader("config").get("output")
+        if not output_cfg:
+            raise ValueError("Missing 'output' section in config")
+        out_bucket = output_cfg["bucket"]
+        silver_key = output_cfg["silver_key"]
+        gold_key = output_cfg["gold_key"]
 
+        # 1. Load and prepare raw price data
+        loader = DataLoader()
         raw_data = loader.load_data()
         data = loader.prepare_data(raw_data)
-
-        logger.info(f"Data loaded successfully | rows={len(data)}")
-
-        # =========================================================
-        # 2. TIME SERIES DECOMPOSITION
-        # =========================================================
-        logger.info("Step 2: Running decomposition")
-
-        decomposer = Decomposer()
-        decomposition = decomposer.run(data)
-
-        logger.info("Decomposition completed")
-
-        # =========================================================
-        # 3. SEASONALITY ANALYSIS
-        # =========================================================
-        logger.info("Step 3: Running seasonality analysis")
-
-        seasonality = SeasonalityAnalyzer()
-
-        monthly_profile = seasonality.build_monthly_profile(
-            decomposition,
-            data.index
-        )
-
-        seasonal_signal = seasonality.get_current_month_signal(monthly_profile)
-
-        logger.info("Seasonality analysis completed")
-
-        # =========================================================
-        # 4. BITCOIN CYCLE ANALYSIS
-        # =========================================================
-        logger.info("Step 4: Running Bitcoin cycle analysis")
-
-        cycle = BitcoinCycleAnalyzer()
+        logger.info(f"Data loaded: {len(data)} rows")
 
         price_col = data.select_dtypes("number").columns[0]
+        logger.info(f"Price column: {price_col}")
 
-        cycle_result = cycle.analyze(
-            price_df=data,
-            price_col=price_col
-        )
+        # 2. Enrich — stamp every row with cycle + calendar dimensions
+        enricher = DataEnricher()
+        enriched = enricher.enrich(data, price_col)
 
-        logger.info("Bitcoin cycle analysis completed")
+        print("\n" + "=" * 60)
+        print("ENRICHED DAILY TABLE — tail(10)")
+        print("=" * 60)
+        print(enriched.tail(10).to_string())
 
-        # =========================================================
-        # FINAL OUTPUT SUMMARY (structured logging only)
-        # =========================================================
+        # 3. Aggregate — build the combined seasonal profile
+        aggregator = SeasonalAggregator()
+        profile = aggregator.build_profile(enriched)
+
+        print("\n" + "=" * 60)
+        print("SEASONAL PROFILE TABLE — tail(10)")
+        print("=" * 60)
+        print(profile.tail(10).to_string())
+
+        # 4. Validate before upload — abort if data is malformed
+        validate_enriched(enriched)
+        validate_profile(profile)
+
+        # 5. Upload to S3
+        upload_df_to_s3(enriched, out_bucket, silver_key, local_file="/tmp/btc_enriched.parquet")
+        upload_df_to_s3(profile,  out_bucket, gold_key,   local_file="/tmp/btc_seasonal_profile.parquet")
+
         logger.info("PIPELINE COMPLETED SUCCESSFULLY")
-
-        logger.info(f"Seasonality Signal → {seasonal_signal}")
-        logger.info(f"Cycle Regime → {cycle_result['cycle_phase']}")
-        logger.info(f"Cycle Bias → {cycle_result['market_bias']}")
-
-        #  UPLOAD ALL TO S3 AND ADD NEW ANALYSIS INVESTIGATE WHAT ANALYSIS SHOULD BE DONE 
 
     except Exception:
         logger.exception("PIPELINE FAILED")
