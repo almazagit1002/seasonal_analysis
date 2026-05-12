@@ -6,15 +6,29 @@ output:
   bucket: "btc-seasonal-analysis-faadab22"
   silver_key: "btc_enriched.parquet"
   gold_key: "btc_seasonal_profile.parquet"
-
+  phase_table_key: "btc_phase_table.parquet"
+  prob_series_key: "btc_phase_probability.parquet"
 
 bitcoin_cycle:
-  bull_days: 450
-  bear_days: 800
-
   halvings:
-    - "2012-11-28"
-    - "2016-07-09"
-    - "2020-05-11"
-    - "2024-04-20"
-    - "2028-03-01"
+    - { label: "2012", date: "2012-11-28", tolerance_days: 0,  data_quality_weight: 0.5 }
+    - { label: "2016", date: "2016-07-09", tolerance_days: 0,  data_quality_weight: 1.0 }
+    - { label: "2020", date: "2020-05-11", tolerance_days: 0,  data_quality_weight: 1.0 }
+    - { label: "2024", date: "2024-04-20", tolerance_days: 0,  data_quality_weight: 1.0 }
+    - { label: "2028", date: "2028-03-01", tolerance_days: 21, data_quality_weight: 1.0 }
+    - { label: "2032", date: "2032-01-15", tolerance_days: 30, data_quality_weight: 1.0 }
+    - { label: "2036", date: "2035-11-01", tolerance_days: 45, data_quality_weight: 1.0 }
+    - { label: "2040", date: "2039-09-01", tolerance_days: 60, data_quality_weight: 1.0 }
+
+  peak_detection:
+    drawdown_threshold: 0.40
+    confirmation_days:  120
+    fallback_cap_days:  800
+
+  trough_detection:
+    recovery_pct:      0.40
+    confirmation_days: 90
+
+estimation:
+  min_cycles_required:  2     # minimum complete cycles needed to fit distributions
+  prior_only_threshold: 0.05  # drawdown below this is treated as "at ATH" — use prior only
